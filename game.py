@@ -2,11 +2,11 @@ import tkinter as tk
 import random
 
 
-TURN_TIME = 150
+TURN_TIME = 1
 
-    
+
 class Game(tk.Canvas):
-    
+
     height = 800
     width = 800
     red_wins = 0
@@ -56,9 +56,6 @@ class Game(tk.Canvas):
             x_directions = [1, -1]
             random.shuffle(x_directions)
             y_directions = [default_direction]
-##            if piece_coords in kings:
-##                y_directions.append(-default_direction)
-##            random.shuffle(y_directions)
             if piece_coords in kings:
                 target_piece = min(
                     enemy_pieces.keys(),
@@ -67,10 +64,17 @@ class Game(tk.Canvas):
                 y_directions = [1, -1] if target_piece[1] > piece_coords[1] else [-1, 1]
             for dir_x in x_directions:
                 for dir_y in y_directions:
+                    jumping = False
                     new_x = piece_coords[0] + dir_x
                     new_y = piece_coords[1] + dir_y
-                    
+
+                    if (new_x, new_y) in enemy_pieces:
+                        new_x = new_x + dir_x
+                        new_y = new_y + dir_y
+                        jumping = True
+
                     if (not (new_x, new_y) in pieces
+                        and not (new_x, new_y) in enemy_pieces
                         and new_x >= 0
                         and new_x < 8
                         and new_y >= 0
@@ -81,19 +85,21 @@ class Game(tk.Canvas):
                         if piece_coords in kings:
                             kings.remove(piece_coords)
                             kings.append((new_x, new_y))
-                        
-                        if (new_x, new_y) in enemy_pieces:
-                            self.delete(enemy_pieces[new_x, new_y])
-                            del enemy_pieces[(new_x, new_y)]
-                            if (new_x, new_y) in enemy_kings:
-                                enemy_kings.remove((new_x, new_y))
+
+                        if jumping:
+                            jumped_x = new_x - dir_x
+                            jumped_y = new_y - dir_y
+                            self.delete(enemy_pieces[jumped_x, jumped_y])
+                            del enemy_pieces[(jumped_x, jumped_y)]
+                            if (jumped_x, jumped_y) in enemy_kings:
+                                enemy_kings.remove((jumped_x, jumped_y))
 
                         if new_y == (0 if self.active_player == 'blue' else 7) and not (new_x, new_y) in kings:
                             kings.append((new_x, new_y))
                             self.itemconfig(
                                 pieces[new_x, new_y],
                                 fill="cyan" if self.active_player == 'blue' else 'magenta')
-                            
+
                         moved = True
                     if moved:
                         break
@@ -121,7 +127,7 @@ class Game(tk.Canvas):
             self.width/2, self.height/2+100, text="Blue Wins: " + str(self.blue_wins), font=("Arial", 25), justify="center")
         self.after(max(TURN_TIME * 25, 500), self.hideText)
 
-    
+
     def hideText(self):
         self.textDisplayed = False
         self.delete(self.victory_text)
@@ -133,7 +139,7 @@ class Game(tk.Canvas):
 
 def _get_piece_coords(x, y):
     return (100*(x)+5, 100*(y)+5, 100*(x)+95, 100*(y)+95)
-    
+
 
 if __name__ == "__main__":
     root = tk.Tk()
