@@ -11,6 +11,7 @@ class Game(tk.Canvas):
     width = 800
     red_wins = 0
     blue_wins = 0
+    draws = 0
 
     def __init__(self, root):
         tk.Canvas.__init__(self, root, bg='#000000', bd=0, height=self.height, width=self.width, highlightthickness=0)
@@ -50,18 +51,22 @@ class Game(tk.Canvas):
         default_direction = -1 if self.active_player == 'blue' else 1
 
         piece_coords = (random.choice(list(pieces.keys())))
-        pieces_tried = set(piece_coords)
         moved = False
+        pieces_tried = set()
         while not moved:
             x_directions = [1, -1]
             random.shuffle(x_directions)
             y_directions = [default_direction]
             if piece_coords in kings:
-                target_piece = min(
-                    enemy_pieces.keys(),
-                    key=lambda foe: (abs(piece_coords[0] - foe[0]) + abs(piece_coords[1] - foe[1])) ** 0.5)
-                x_directions = [1, -1] if target_piece[0] > piece_coords[0] else [-1, 1]
-                y_directions = [1, -1] if target_piece[1] > piece_coords[1] else [-1, 1]
+                if self.active_player == 'red':
+                    y_directions.append(-default_direction)
+                    random.shuffle(y_directions)
+                else:
+                    target_piece = min(
+                        enemy_pieces.keys(),
+                        key=lambda foe: (abs(piece_coords[0] - foe[0]) + abs(piece_coords[1] - foe[1])) ** 0.5)
+                    x_directions = [1, -1] if target_piece[0] > piece_coords[0] else [-1, 1]
+                    y_directions = [1, -1] if target_piece[1] > piece_coords[1] else [-1, 1]
             for dir_x in x_directions:
                 for dir_y in y_directions:
                     jumping = False
@@ -105,8 +110,16 @@ class Game(tk.Canvas):
                         break
                 if moved:
                     break
-            piece_coords = random.choice(list(set(pieces.keys()) - pieces_tried))
-            pieces_tried.add(piece_coords)
+
+            if not moved:
+                pieces_tried.add(piece_coords)
+                print("Pieces Tried: " + str(pieces_tried))
+                print("Pieces: " + str(pieces))
+                if len(pieces_tried) == len(pieces) and not moved:
+                    self.draws += 1
+                    self.show_message("Draw!")
+                    return
+                piece_coords = random.choice(list(set(pieces.keys()) - pieces_tried))
 
         self.blue_pieces = pieces if self.active_player == 'blue' else enemy_pieces
         self.red_pieces = pieces if self.active_player == 'red' else enemy_pieces
@@ -125,6 +138,8 @@ class Game(tk.Canvas):
             self.width/2, self.height/2+125, text="Red Wins: " + str(self.red_wins), font=("Arial", 25), justify="center")
         self.blue_stat_text = self.create_text(
             self.width/2, self.height/2+100, text="Blue Wins: " + str(self.blue_wins), font=("Arial", 25), justify="center")
+        self.blue_stat_text = self.create_text(
+            self.width/2, self.height/2+150, text="Draws: " + str(self.draws), font=("Arial", 25), justify="center")
         self.after(max(TURN_TIME * 25, 500), self.hideText)
 
 
